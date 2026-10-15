@@ -2,13 +2,15 @@ import {
   ArticleContent,
   PlaybackMode,
   VoiceOption,
+  SpeakingStyle,
   GetArticleResponse,
   SummarizeResponse,
   GetAudioResponse,
   UserSettings,
 } from '../lib/types'
 import { getSettings, saveSettings, getApiKey } from '../lib/storage'
-import { summarize, textToSpeech } from '../lib/openai'
+import { summarize } from '../lib/openai'
+import { narrate, MIN_MATCH_SCORE } from '../lib/narration'
 import { getCachedSummary, cacheSummary, getCachedAudio, cacheAudio, clearCache } from '../lib/cache'
 
 // Handle messages from popup and content scripts
@@ -41,7 +43,7 @@ async function handleMessage(
       return handleGetAudio(message.payload as {
         text: string
         voice: VoiceOption
-        speed: number
+        style: SpeakingStyle
         url: string
         mode: PlaybackMode
       })
@@ -56,13 +58,6 @@ async function handleMessage(
     case 'CLEAR_CACHE':
       await clearCache()
       return { success: true }
-
-    case 'GET_AUDIO_BLOB':
-      return handleGetAudioBlob(message.payload as {
-        url: string
-        mode: PlaybackMode
-        voice: VoiceOption
-      })
 
     default:
       throw new Error(`Unknown message type: ${message.type}`)
@@ -147,41 +142,21 @@ async function handleSummarize(payload: {
   }
 }
 
-// Convert blob to base64 data URL (service workers can't use URL.createObjectURL)
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer()
-  const bytes = new Uint8Array(buffer)
-
-  // Process in chunks to avoid call stack issues with large files
-  const chunkSize = 8192
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize)
-    binary += String.fromCharCode.apply(null, Array.from(chunk))
-  }
-
-  const base64 = btoa(binary)
-  const mimeType = blob.type || 'audio/mpeg'
-  return `data:${mimeType};base64,${base64}`
-}
-
-// Handle audio generation request - returns cache key, popup retrieves blob
+// Handle audio generation request - narrates and caches the audio; the popup reads it from the cache
 async function handleGetAudio(payload: {
   text: string
   voice: VoiceOption
-  speed: number
+  style: SpeakingStyle
   url: string
   mode: PlaybackMode
 }): Promise<GetAudioResponse> {
-  const { text, voice, speed, url, mode } = payload
+  const { text, voice, style, url, mode } = payload
 
   try {
     // Check cache first
-    const cached = await getCachedAudio(url, mode, voice)
+    const cached = await getCachedAudio(url, mode, voice, style)
     if (cached) {
-      // Return cache key for popup to retrieve
-      const cacheKey = `${url}:${mode}:${voice}`
-      return { success: true, audioUrl: cacheKey, cached: true }
+      return { success: true, cached: true }
     }
 
     // Get API key
@@ -191,45 +166,20 @@ async function handleGetAudio(payload: {
     }
 
     // Generate audio
-    const blob = await textToSpeech(apiKey, text, voice, speed)
+    const { audio, segments } = await narrate(apiKey, text, voice, style)
+    const drifted = segments.filter(segment => segment.score < MIN_MATCH_SCORE)
+    if (drifted.length) {
+      console.warn(`${drifted.length} of ${segments.length} narration segments still differ from the text after retries`, drifted)
+    }
 
     // Cache the result
-    await cacheAudio(url, mode, voice, blob)
+    await cacheAudio(url, mode, voice, style, audio)
 
-    // Return cache key for popup to retrieve
-    const cacheKey = `${url}:${mode}:${voice}`
-    return { success: true, audioUrl: cacheKey, cached: false }
+    return { success: true, cached: false }
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Audio generation failed',
-    }
-  }
-}
-
-// Handle audio blob retrieval - converts to array buffer for transfer
-async function handleGetAudioBlob(payload: {
-  url: string
-  mode: PlaybackMode
-  voice: VoiceOption
-}): Promise<{ success: boolean; audioData?: number[]; error?: string }> {
-  const { url, mode, voice } = payload
-
-  try {
-    const blob = await getCachedAudio(url, mode, voice)
-    if (!blob) {
-      return { success: false, error: 'Audio not found in cache' }
-    }
-
-    // Convert blob to array for transfer (can't send Blob through messaging)
-    const buffer = await blob.arrayBuffer()
-    const audioData = Array.from(new Uint8Array(buffer))
-
-    return { success: true, audioData }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to retrieve audio',
     }
   }
 }

@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react'
-import { VoiceOption, UserSettings } from '../lib/types'
+import { VoiceOption, UserSettings, VOICES, DEFAULT_VOICE } from '../lib/types'
 import { validateApiKey } from '../lib/openai'
 
-const VOICES: { value: VoiceOption; label: string; description: string }[] = [
-  { value: 'alloy', label: 'Alloy', description: 'Neutral and balanced' },
-  { value: 'echo', label: 'Echo', description: 'Warm and clear' },
-  { value: 'fable', label: 'Fable', description: 'Expressive British' },
-  { value: 'onyx', label: 'Onyx', description: 'Deep and authoritative' },
-  { value: 'nova', label: 'Nova', description: 'Friendly and upbeat' },
-  { value: 'shimmer', label: 'Shimmer', description: 'Soft and pleasant' },
-]
+// OpenAI recommends Marin and Cedar for the best narration quality
+const RECOMMENDED_VOICES: VoiceOption[] = ['marin', 'cedar']
 
 const SPEEDS = [
   { value: 0.75, label: '0.75x' },
@@ -20,7 +14,7 @@ const SPEEDS = [
 
 export function Options() {
   const [apiKey, setApiKey] = useState('')
-  const [defaultVoice, setDefaultVoice] = useState<VoiceOption>('nova')
+  const [defaultVoice, setDefaultVoice] = useState<VoiceOption>(DEFAULT_VOICE)
   const [defaultSpeed, setDefaultSpeed] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -34,7 +28,7 @@ export function Options() {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }) as UserSettings
         setApiKey(response.apiKey || '')
-        setDefaultVoice(response.defaultVoice || 'nova')
+        setDefaultVoice(response.defaultVoice || DEFAULT_VOICE)
         setDefaultSpeed(response.defaultSpeed || 1)
         if (response.apiKey) {
           setApiKeyValid(true) // Assume valid if already saved
@@ -149,6 +143,7 @@ export function Options() {
               <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
                 OpenAI Platform
               </a>
+              . Your OpenAI account needs prepaid credit (at least $5) for summaries and narration.
             </p>
           </div>
         </section>
@@ -164,8 +159,9 @@ export function Options() {
               onChange={e => setDefaultVoice(e.target.value as VoiceOption)}
             >
               {VOICES.map(voice => (
-                <option key={voice.value} value={voice.value}>
-                  {voice.label} - {voice.description}
+                <option key={voice} value={voice}>
+                  {voice.charAt(0).toUpperCase() + voice.slice(1)}
+                  {RECOMMENDED_VOICES.includes(voice) ? ' (recommended)' : ''}
                 </option>
               ))}
             </select>
@@ -211,7 +207,7 @@ export function Options() {
       </main>
 
       <footer className="options-footer">
-        <p>SpeakEasy v1.0.0</p>
+        <p>SpeakEasy v2.0.1</p>
       </footer>
     </div>
   )

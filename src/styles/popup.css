@@ -120,7 +120,7 @@ body {
 }
 
 .mode-track {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
   background: var(--surface-3); border-radius: var(--radius-md);
   overflow: hidden; border: 1px solid var(--surface-3);
 }

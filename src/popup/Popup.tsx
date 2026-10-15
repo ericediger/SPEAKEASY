@@ -1,9 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ArticleContent, PlaybackMode, VoiceOption, UserSettings } from '../lib/types'
+import {
+  ArticleContent, PlaybackMode, VoiceOption, SpeakingStyle, UserSettings,
+  VOICES, STYLES, DEFAULT_VOICE, SUMMARY_WORDS, WORDS_PER_MINUTE,
+} from '../lib/types'
+import { getCachedAudio } from '../lib/cache'
 
-const VOICES: VoiceOption[] = ['alloy', 'ash', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer']
-const STYLES = ['Neutral', 'Energetic', 'Calm', 'Professional', 'Conversational', 'Storytelling']
-const MODE_EST: Record<PlaybackMode, string> = { tldr: '~2m', short: '~4m', long: '~8m', full: '~12m' }
+const MODES: PlaybackMode[] = ['tldr', 'medium', 'full']
+const MODE_LABELS: Record<PlaybackMode, string> = { tldr: 'TL;DR', medium: 'Medium', full: 'Full' }
+
+// Estimated listening time; summaries never run longer than the article itself
+function estimateMinutes(mode: PlaybackMode, wordCount: number): string {
+  const words = mode === 'full' ? wordCount : Math.min(SUMMARY_WORDS[mode], wordCount)
+  return `~${Math.max(1, Math.round(words / WORDS_PER_MINUTE))}m`
+}
 
 type AppState = 'loading' | 'no-api-key' | 'no-article' | 'ready' | 'error'
 type PlayerState = 'idle' | 'generating' | 'ready' | 'playing' | 'paused'
@@ -15,8 +24,8 @@ export function Popup() {
   const [settings, setSettings] = useState<UserSettings | null>(null)
 
   const [mode, setMode] = useState<PlaybackMode>('tldr')
-  const [voice, setVoice] = useState<VoiceOption>('nova')
-  const [style, setStyle] = useState('Neutral')
+  const [voice, setVoice] = useState<VoiceOption>(DEFAULT_VOICE)
+  const [style, setStyle] = useState<SpeakingStyle>('Neutral')
   const [speed, setSpeed] = useState(1.0)
 
   const [audioUrl, setAudioUrl] = useState('')
@@ -33,13 +42,14 @@ export function Popup() {
   const prevUrlRef = useRef('')
   const summaryRef = useRef('')
   const hasGeneratedRef = useRef(false)
+  const autoPlayRef = useRef(false) // start playback once the new audio can play through
 
   useEffect(() => {
     async function init() {
       try {
         const settingsRes = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' })
         setSettings(settingsRes)
-        setVoice(settingsRes.defaultVoice || 'nova')
+        setVoice(settingsRes.defaultVoice || DEFAULT_VOICE)
         setSpeed(settingsRes.defaultSpeed || 1.0)
         setStyle(settingsRes.defaultStyle || 'Neutral')
         if (!settingsRes.apiKey) { setAppState('no-api-key'); return }
@@ -85,10 +95,23 @@ export function Popup() {
     if (audioRef.current) audioRef.current.playbackRate = speed
   }, [speed])
 
+  // Narrate text (or reuse cached audio) and return a playable blob URL. The audio is read straight
+  // from the shared IndexedDB cache, since full-article WAV files are too large for extension messaging.
+  const loadAudio = useCallback(async (url: string, text: string): Promise<string> => {
+    const audioRes = await chrome.runtime.sendMessage({
+      type: 'GET_AUDIO',
+      payload: { text, voice, style, url, mode },
+    })
+    if (!audioRes.success) throw new Error(audioRes.error || 'Failed to generate audio')
+
+    const blob = await getCachedAudio(url, mode, voice, style)
+    if (!blob) throw new Error('Failed to retrieve audio')
+    return URL.createObjectURL(blob)
+  }, [voice, style, mode])
+
   const generate = useCallback(async () => {
     if (!article || !settings?.apiKey) return
 
-    const wasPlaying = playerState === 'playing'
     if (audioRef.current) audioRef.current.pause()
 
     setPlayerState('generating')
@@ -101,44 +124,24 @@ export function Popup() {
     try {
       const sumRes = await chrome.runtime.sendMessage({
         type: 'SUMMARIZE',
-        payload: { text: article.bodyText, mode, url: article.url, style },
+        payload: { text: article.bodyText, mode, url: article.url },
       })
       if (!sumRes.success) throw new Error(sumRes.error || 'Failed to summarize')
       summaryRef.current = sumRes.summary
 
-      const audioRes = await chrome.runtime.sendMessage({
-        type: 'GET_AUDIO',
-        payload: { text: sumRes.summary, voice, speed: 1.0, url: article.url, mode },
-      })
-      if (!audioRes.success) throw new Error(audioRes.error || 'Failed to generate audio')
-
-      const blobRes = await chrome.runtime.sendMessage({
-        type: 'GET_AUDIO_BLOB',
-        payload: { url: article.url, mode, voice },
-      })
-      if (!blobRes.success) throw new Error(blobRes.error || 'Failed to retrieve audio')
-
-      const blob = new Blob([new Uint8Array(blobRes.audioData)], { type: 'audio/mpeg' })
-      setAudioUrl(URL.createObjectURL(blob))
+      const url = await loadAudio(article.url, sumRes.summary)
+      // The user pressed Play to generate, so play as soon as the audio is ready
+      autoPlayRef.current = true
+      setAudioUrl(url)
       setPlayerState('ready')
       hasGeneratedRef.current = true
-
-      // Auto-play if was playing before
-      if (wasPlaying) {
-        setTimeout(() => {
-          if (audioRef.current) {
-            audioRef.current.playbackRate = speed
-            audioRef.current.play().catch(() => {})
-          }
-        }, 100)
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
       setPlayerState('idle')
     }
-  }, [article, settings, mode, voice, style, playerState, speed])
+  }, [article, settings, mode, loadAudio])
 
-  // Regenerate audio only (reuses existing summary) when voice changes
+  // Regenerate audio only (reuses existing summary) when voice or style changes
   const regenerateAudio = useCallback(async () => {
     if (!article || !settings?.apiKey || !summaryRef.current) return
 
@@ -153,35 +156,16 @@ export function Popup() {
     setAudioReady(false)
 
     try {
-      const audioRes = await chrome.runtime.sendMessage({
-        type: 'GET_AUDIO',
-        payload: { text: summaryRef.current, voice, speed: 1.0, url: article.url, mode },
-      })
-      if (!audioRes.success) throw new Error(audioRes.error || 'Failed to generate audio')
-
-      const blobRes = await chrome.runtime.sendMessage({
-        type: 'GET_AUDIO_BLOB',
-        payload: { url: article.url, mode, voice },
-      })
-      if (!blobRes.success) throw new Error(blobRes.error || 'Failed to retrieve audio')
-
-      const blob = new Blob([new Uint8Array(blobRes.audioData)], { type: 'audio/mpeg' })
-      setAudioUrl(URL.createObjectURL(blob))
+      const url = await loadAudio(article.url, summaryRef.current)
+      // Keep playing in the new voice or style if audio was playing before
+      autoPlayRef.current = wasPlaying
+      setAudioUrl(url)
       setPlayerState('ready')
-      // Auto-play if was playing before
-      if (wasPlaying) {
-        setTimeout(() => {
-          if (audioRef.current) {
-            audioRef.current.playbackRate = speed
-            audioRef.current.play().catch(() => {})
-          }
-        }, 100)
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
       setPlayerState('idle')
     }
-  }, [article, settings, mode, voice, playerState])
+  }, [article, settings, playerState, loadAudio])
 
   // Auto-regenerate audio when voice changes (if already generated)
   const prevVoiceRef = useRef(voice)
@@ -193,15 +177,31 @@ export function Popup() {
     prevVoiceRef.current = voice
   }, [voice, regenerateAudio])
 
-  // Auto-regenerate summary and audio when style changes (if already generated)
+  // Auto-regenerate audio when style changes (if already generated); style shapes delivery, not the summary
   const prevStyleRef = useRef(style)
   useEffect(() => {
     if (prevStyleRef.current !== style && hasGeneratedRef.current) {
       prevStyleRef.current = style
-      generate() // Style affects summary, so regenerate everything
+      regenerateAudio()
     }
     prevStyleRef.current = style
-  }, [style, generate])
+  }, [style, regenerateAudio])
+
+  // Switching mode discards the other mode's audio; Play generates (or loads from cache) the new one
+  const prevModeRef = useRef(mode)
+  useEffect(() => {
+    if (prevModeRef.current !== mode && hasGeneratedRef.current) {
+      if (audioRef.current) audioRef.current.pause()
+      setAudioUrl('')
+      setPlayerState('idle')
+      setCurrentTime(0)
+      setDuration(0)
+      setAudioReady(false)
+      summaryRef.current = ''
+      hasGeneratedRef.current = false
+    }
+    prevModeRef.current = mode
+  }, [mode])
 
   const play = () => {
     if (!audioRef.current || !audioReady) return
@@ -276,17 +276,17 @@ export function Popup() {
         <div className="article-meta">
           <span>{hostname}</span>
           <span className="meta-sep" />
-          <span className="active-mode">{mode.toUpperCase()}</span>
+          <span className="active-mode">{MODE_LABELS[mode].toUpperCase()}</span>
         </div>
       </div>
 
       <div className="section">
         <div className="section-label">Mode</div>
         <div className="mode-track">
-          {(['tldr', 'short', 'long', 'full'] as PlaybackMode[]).map(m => (
+          {MODES.map(m => (
             <button key={m} className={`mode-btn ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
-              <span>{m === 'tldr' ? 'TL;DR' : m.charAt(0).toUpperCase() + m.slice(1)}</span>
-              <span className="mode-est">{MODE_EST[m]}</span>
+              <span>{MODE_LABELS[m]}</span>
+              <span className="mode-est">{estimateMinutes(m, article?.wordCount || 0)}</span>
             </button>
           ))}
         </div>
@@ -302,7 +302,7 @@ export function Popup() {
           </div>
           <div className="progress-times">
             <span className="current-time">{fmt(currentTime)}</span>
-            <span>{duration ? fmt(duration) : MODE_EST[mode]}</span>
+            <span>{duration ? fmt(duration) : estimateMinutes(mode, article?.wordCount || 0)}</span>
           </div>
         </div>
 
@@ -376,7 +376,14 @@ export function Popup() {
         <audio
           ref={audioRef}
           src={audioUrl}
-          onCanPlayThrough={() => setAudioReady(true)}
+          onCanPlayThrough={() => {
+            setAudioReady(true)
+            if (autoPlayRef.current && audioRef.current) {
+              autoPlayRef.current = false
+              audioRef.current.playbackRate = speed
+              audioRef.current.play().catch(e => setError(e.message))
+            }
+          }}
           onPlay={() => setPlayerState('playing')}
           onPause={() => { if (audioRef.current && audioRef.current.currentTime > 0) setPlayerState('paused') }}
           onLoadedMetadata={() => { if (audioRef.current) { setDuration(audioRef.current.duration); audioRef.current.playbackRate = speed } }}

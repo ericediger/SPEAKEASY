@@ -1,18 +1,25 @@
-import { UserSettings, VoiceOption } from './types'
+import { UserSettings, VoiceOption, VOICES, DEFAULT_VOICE, STYLES } from './types'
 
 const DEFAULT_SETTINGS: UserSettings = {
   apiKey: '',
-  defaultVoice: 'nova',
+  defaultVoice: DEFAULT_VOICE,
   defaultSpeed: 1.0,
+  defaultStyle: 'Neutral',
+}
+
+// Voices saved by earlier versions (fable, nova, onyx) aren't available for narration any more
+function validVoice(voice: unknown): VoiceOption {
+  return VOICES.includes(voice as VoiceOption) ? voice as VoiceOption : DEFAULT_SETTINGS.defaultVoice
 }
 
 // Get all user settings
 export async function getSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.sync.get(['apiKey', 'defaultVoice', 'defaultSpeed'])
+  const result = await chrome.storage.sync.get(['apiKey', 'defaultVoice', 'defaultSpeed', 'defaultStyle'])
   return {
     apiKey: result.apiKey || DEFAULT_SETTINGS.apiKey,
-    defaultVoice: result.defaultVoice || DEFAULT_SETTINGS.defaultVoice,
+    defaultVoice: validVoice(result.defaultVoice),
     defaultSpeed: result.defaultSpeed || DEFAULT_SETTINGS.defaultSpeed,
+    defaultStyle: STYLES.includes(result.defaultStyle) ? result.defaultStyle : DEFAULT_SETTINGS.defaultStyle,
   }
 }
 
@@ -35,7 +42,7 @@ export async function saveApiKey(apiKey: string): Promise<void> {
 // Get default voice
 export async function getDefaultVoice(): Promise<VoiceOption> {
   const { defaultVoice } = await chrome.storage.sync.get('defaultVoice')
-  return defaultVoice || DEFAULT_SETTINGS.defaultVoice
+  return validVoice(defaultVoice)
 }
 
 // Save default voice
