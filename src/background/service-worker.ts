@@ -13,7 +13,12 @@ import { summarize } from '../lib/openai'
 import { narrate, MIN_MATCH_SCORE } from '../lib/narration'
 import { getCachedSummary, cacheSummary, getCachedAudio, cacheAudio, clearCache } from '../lib/cache'
 
-// Handle messages from popup and content scripts
+// Clicking the toolbar icon opens the side panel
+chrome.sidePanel
+  .setPanelBehavior({ openPanelOnActionClick: true })
+  .catch(error => console.error('Failed to set side panel behavior:', error))
+
+// Handle messages from the side panel and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   handleMessage(message, sender)
     .then(sendResponse)
@@ -30,7 +35,7 @@ async function handleMessage(
 ): Promise<unknown> {
   switch (message.type) {
     case 'GET_ARTICLE':
-      return getArticle()
+      return getArticle((message.payload as { tabId?: number } | undefined)?.tabId)
 
     case 'SUMMARIZE':
       return handleSummarize(message.payload as {
@@ -64,10 +69,12 @@ async function handleMessage(
   }
 }
 
-// Get article from the active tab
-async function getArticle(): Promise<GetArticleResponse> {
+// Get article from the given tab, or the active tab
+async function getArticle(tabId?: number): Promise<GetArticleResponse> {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    const tab = tabId === undefined
+      ? (await chrome.tabs.query({ active: true, currentWindow: true }))[0]
+      : await chrome.tabs.get(tabId)
 
     if (!tab?.id) {
       return { success: false, error: 'No active tab found' }
