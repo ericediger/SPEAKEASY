@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb'
-import { PlaybackMode, VoiceOption } from './types'
+import { PlaybackMode, SpeakingStyle, VoiceOption } from './types'
 
 interface SpeakEasyDB extends DBSchema {
   summaries: {
@@ -16,6 +16,7 @@ interface SpeakEasyDB extends DBSchema {
     value: {
       blob: Blob
       voice: VoiceOption
+      style: SpeakingStyle
       mode: PlaybackMode
       createdAt: number
       expiresAt: number
@@ -24,7 +25,7 @@ interface SpeakEasyDB extends DBSchema {
 }
 
 const DB_NAME = 'speakeasy-cache'
-const DB_VERSION = 1
+const DB_VERSION = 2 // v2: realtime narration (WAV) and the TL;DR / Medium / Full modes
 const DEFAULT_TTL = 7 * 24 * 60 * 60 * 1000 // 7 days in ms
 
 let dbPromise: Promise<IDBPDatabase<SpeakEasyDB>> | null = null
@@ -32,7 +33,13 @@ let dbPromise: Promise<IDBPDatabase<SpeakEasyDB>> | null = null
 async function getDB(): Promise<IDBPDatabase<SpeakEasyDB>> {
   if (!dbPromise) {
     dbPromise = openDB<SpeakEasyDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
+        // Summaries and MP3 audio from v1 belong to the old modes and voices
+        if (oldVersion < 2) {
+          for (const name of Array.from(db.objectStoreNames)) {
+            db.deleteObjectStore(name)
+          }
+        }
         if (!db.objectStoreNames.contains('summaries')) {
           db.createObjectStore('summaries')
         }
@@ -51,8 +58,8 @@ function getSummaryKey(url: string, mode: PlaybackMode): string {
 }
 
 // Generate cache key for audio
-function getAudioKey(url: string, mode: PlaybackMode, voice: VoiceOption): string {
-  return `${url}:${mode}:${voice}`
+function getAudioKey(url: string, mode: PlaybackMode, voice: VoiceOption, style: SpeakingStyle): string {
+  return `${url}:${mode}:${voice}:${style}`
 }
 
 // Get cached summary
@@ -96,10 +103,11 @@ export async function cacheSummary(
 export async function getCachedAudio(
   url: string,
   mode: PlaybackMode,
-  voice: VoiceOption
+  voice: VoiceOption,
+  style: SpeakingStyle
 ): Promise<Blob | null> {
   const db = await getDB()
-  const key = getAudioKey(url, mode, voice)
+  const key = getAudioKey(url, mode, voice, style)
   const entry = await db.get('audio', key)
 
   if (!entry) return null
@@ -116,16 +124,18 @@ export async function cacheAudio(
   url: string,
   mode: PlaybackMode,
   voice: VoiceOption,
+  style: SpeakingStyle,
   blob: Blob,
   ttl: number = DEFAULT_TTL
 ): Promise<void> {
   const db = await getDB()
-  const key = getAudioKey(url, mode, voice)
+  const key = getAudioKey(url, mode, voice, style)
   const now = Date.now()
 
   await db.put('audio', {
     blob,
     voice,
+    style,
     mode,
     createdAt: now,
     expiresAt: now + ttl,

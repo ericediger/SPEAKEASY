@@ -3,7 +3,7 @@ import { ManifestV3Export } from '@crxjs/vite-plugin'
 const manifest: ManifestV3Export = {
   manifest_version: 3,
   name: 'SpeakEasy',
-  version: '1.0.0',
+  version: '2.0.1',
   description: 'AI-powered article summarization and text-to-speech',
   permissions: ['activeTab', 'storage', 'scripting'],
   host_permissions: ['https://api.openai.com/*'],

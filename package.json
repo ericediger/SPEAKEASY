@@ -1,12 +1,14 @@
 {
   "name": "speakeasy",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "Chrome extension for AI-powered article summarization and text-to-speech",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:reading": "esbuild scripts/reading-test.ts --bundle --platform=node --format=esm --log-level=warning --outfile=test-output/reading-test.mjs && node test-output/reading-test.mjs",
+    "deploy": "npm run build && rsync -a --delete --exclude .git --exclude .gitignore --exclude .gitkeep --exclude .DS_Store dist/ \"$HOME/Desktop/SPEAKEASY/\""
   },
   "dependencies": {
     "react": "^18.2.0",

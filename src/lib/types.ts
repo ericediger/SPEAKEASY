@@ -7,18 +7,36 @@ export interface ArticleContent {
   url: string
 }
 
-// Playback modes for summarization
-export type PlaybackMode = 'tldr' | 'short' | 'long' | 'full'
+// Playback modes: TL;DR (~2 min), Medium (~5 min), or the full article
+export type PlaybackMode = 'tldr' | 'medium' | 'full'
 
-// Available OpenAI TTS voices (all current voices)
-export type VoiceOption = 'alloy' | 'ash' | 'coral' | 'echo' | 'fable' | 'nova' | 'onyx' | 'sage' | 'shimmer'
+// Typical narration pace, used for summary lengths and time estimates
+export const WORDS_PER_MINUTE = 150
+
+// Target summary length in words for each summarized mode
+export const SUMMARY_WORDS: Record<Exclude<PlaybackMode, 'full'>, number> = {
+  tldr: 300, // ~2 minutes
+  medium: 750, // ~5 minutes
+}
+
+// Voices available on gpt-realtime-2.1-mini
+export type VoiceOption = 'alloy' | 'ash' | 'ballad' | 'coral' | 'echo' | 'sage' | 'shimmer' | 'verse' | 'marin' | 'cedar'
+
+export const VOICES: VoiceOption[] = ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse']
+
+export const DEFAULT_VOICE: VoiceOption = 'marin'
+
+// Speaking styles, applied to the narrator's delivery
+export type SpeakingStyle = 'Neutral' | 'Energetic' | 'Calm' | 'Professional' | 'Conversational' | 'Storytelling'
+
+export const STYLES: SpeakingStyle[] = ['Neutral', 'Energetic', 'Calm', 'Professional', 'Conversational', 'Storytelling']
 
 // User settings stored in chrome.storage.sync
 export interface UserSettings {
   apiKey: string
   defaultVoice: VoiceOption
   defaultSpeed: number
-  defaultStyle: string
+  defaultStyle: SpeakingStyle
 }
 
 // Cache entry for summaries
@@ -33,6 +51,7 @@ export interface SummaryCacheEntry {
 export interface AudioCacheEntry {
   blob: Blob
   voice: VoiceOption
+  style: SpeakingStyle
   mode: PlaybackMode
   createdAt: number
   expiresAt: number
@@ -73,14 +92,13 @@ export interface SummarizeResponse {
 export interface GetAudioRequest {
   text: string
   voice: VoiceOption
-  speed: number
+  style: SpeakingStyle
   url: string
   mode: PlaybackMode
 }
 
 export interface GetAudioResponse {
   success: boolean
-  audioUrl?: string
   error?: string
   cached?: boolean
 }
