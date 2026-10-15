@@ -142,6 +142,8 @@ export function Popup() {
     prevUrlRef.current = audioUrl
   }, [audioUrl])
 
+  // Smooth progress while playing. Chrome can throttle or pause animation frames in the side panel while the
+  // audio keeps going, so the audio element's own timeupdate event (below) keeps the bar on the media clock too.
   useEffect(() => {
     const update = () => {
       if (audioRef.current && playerState === 'playing') {
@@ -152,6 +154,8 @@ export function Popup() {
     if (playerState === 'playing') animationRef.current = requestAnimationFrame(update)
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current) }
   }, [playerState])
+
+  const syncTime = () => { if (audioRef.current) setCurrentTime(audioRef.current.currentTime) }
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.playbackRate = speed
@@ -485,7 +489,9 @@ export function Popup() {
             }
           }}
           onPlay={() => setPlayerState('playing')}
-          onPause={() => { if (audioRef.current && audioRef.current.currentTime > 0) setPlayerState('paused') }}
+          onTimeUpdate={syncTime}
+          onSeeked={syncTime}
+          onPause={() => { syncTime(); if (audioRef.current && audioRef.current.currentTime > 0) setPlayerState('paused') }}
           onLoadedMetadata={() => { if (audioRef.current) { setDuration(audioRef.current.duration); audioRef.current.playbackRate = speed } }}
           onEnded={() => { setPlayerState('ready'); setCurrentTime(0) }}
           onError={(e) => { setError(`Audio error: ${e.currentTarget.error?.message || 'Unknown'}`); setAudioReady(false) }}

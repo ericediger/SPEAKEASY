@@ -165,7 +165,7 @@ body {
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
   border-radius: var(--radius-full);
   width: 0%; position: relative;
-  transition: width 100ms linear;
+  transition: width 250ms linear; /* bridges the ~250 ms between timeupdate events when animation frames are throttled */
 }
 
 .progress-glow {
