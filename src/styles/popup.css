@@ -151,7 +151,7 @@ body {
 /* Player */
 .player-zone { padding: var(--sp-4) var(--sp-5) var(--sp-3); }
 
-.progress-container { cursor: pointer; padding: var(--sp-1) 0; margin-bottom: var(--sp-1); }
+.progress-container { cursor: pointer; padding: var(--sp-1) 0; margin-bottom: var(--sp-1); user-select: none; touch-action: none; }
 
 .progress-track {
   width: 100%; height: 3px;
@@ -165,7 +165,8 @@ body {
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
   border-radius: var(--radius-full);
   width: 0%; position: relative;
-  transition: width 250ms linear; /* bridges the ~250 ms between timeupdate events when animation frames are throttled */
+  /* No width transition. Chrome starves the side panel of animation frames, so a transition keeps restarting from a
+     stale value and can leave the bar pinned after a seek. The width is always the latest known media position. */
 }
 
 .progress-glow {
