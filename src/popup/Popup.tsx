@@ -49,6 +49,7 @@ export function Popup() {
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const animationRef = useRef<number>()
+  const scrubbingRef = useRef(false)
   const prevUrlRef = useRef('')
   const summaryRef = useRef('')
   const hasGeneratedRef = useRef(false)
@@ -142,16 +143,20 @@ export function Popup() {
     prevUrlRef.current = audioUrl
   }, [audioUrl])
 
+  // Smooth progress while playing. Chrome can throttle or pause animation frames in the side panel while the
+  // audio keeps going, so the audio element's own timeupdate event (below) keeps the bar on the media clock too.
+  // While the user is scrubbing, the bar follows the pointer instead of the media clock.
   useEffect(() => {
     const update = () => {
-      if (audioRef.current && playerState === 'playing') {
-        setCurrentTime(audioRef.current.currentTime)
-        animationRef.current = requestAnimationFrame(update)
-      }
+      if (playerState !== 'playing') return
+      if (audioRef.current && !scrubbingRef.current) setCurrentTime(audioRef.current.currentTime)
+      animationRef.current = requestAnimationFrame(update)
     }
     if (playerState === 'playing') animationRef.current = requestAnimationFrame(update)
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current) }
   }, [playerState])
+
+  const syncTime = () => { if (audioRef.current && !scrubbingRef.current) setCurrentTime(audioRef.current.currentTime) }
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.playbackRate = speed
@@ -308,11 +313,28 @@ export function Popup() {
     setCurrentTime(audioRef.current.currentTime)
   }
 
-  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration) return
+  // Scrubbing: the bar follows the pointer while the button is held and the audio seeks once on release,
+  // so a drag is one seek rather than one per pointer move. A plain click is a zero-length drag.
+  const timeAtPointer = (e: React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration
-    setCurrentTime(audioRef.current.currentTime)
+    return Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)) * duration
+  }
+  const scrubStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration || e.button !== 0) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    scrubbingRef.current = true
+    setCurrentTime(timeAtPointer(e))
+  }
+  const scrubMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (scrubbingRef.current) setCurrentTime(timeAtPointer(e))
+  }
+  const scrubEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!scrubbingRef.current) return
+    scrubbingRef.current = false
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+    const t = timeAtPointer(e)
+    if (audioRef.current) audioRef.current.currentTime = t
+    setCurrentTime(t)
   }
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`
@@ -393,7 +415,7 @@ export function Popup() {
       </div>
 
       <div className="player-zone">
-        <div className="progress-container" onClick={seek}>
+        <div className="progress-container" onPointerDown={scrubStart} onPointerMove={scrubMove} onPointerUp={scrubEnd} onPointerCancel={scrubEnd}>
           <div className="progress-track">
             <div className="progress-fill" style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}>
               <div className="progress-glow" />
@@ -485,7 +507,10 @@ export function Popup() {
             }
           }}
           onPlay={() => setPlayerState('playing')}
-          onPause={() => { if (audioRef.current && audioRef.current.currentTime > 0) setPlayerState('paused') }}
+          onPlaying={syncTime}
+          onTimeUpdate={syncTime}
+          onSeeked={syncTime}
+          onPause={() => { syncTime(); if (audioRef.current && audioRef.current.currentTime > 0) setPlayerState('paused') }}
           onLoadedMetadata={() => { if (audioRef.current) { setDuration(audioRef.current.duration); audioRef.current.playbackRate = speed } }}
           onEnded={() => { setPlayerState('ready'); setCurrentTime(0) }}
           onError={(e) => { setError(`Audio error: ${e.currentTarget.error?.message || 'Unknown'}`); setAudioReady(false) }}
