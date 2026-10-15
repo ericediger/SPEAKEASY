@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:reading": "esbuild scripts/reading-test.ts --bundle --platform=node --format=esm --log-level=warning --outfile=test-output/reading-test.mjs && node test-output/reading-test.mjs",
-    "deploy": "npm run build && rsync -a --delete --exclude .git --exclude .gitignore --exclude .gitkeep --exclude .DS_Store dist/ \"$HOME/Desktop/SPEAKEASY/\""
+    "deploy": "npm run build && rsync -a --delete --exclude .git --exclude .gitignore --exclude .gitkeep --exclude .DS_Store dist/ \"$HOME/Desktop/SPEAKEASY/\"",
+    "demo": "npm run build && node scripts/build-demo.mjs",
+    "demo:audio": "esbuild scripts/demo-audio.ts --bundle --platform=node --format=esm --log-level=warning --outfile=test-output/demo-audio.mjs && node test-output/demo-audio.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

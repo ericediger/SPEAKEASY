@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-10-15T21:33:23.419Z",
+  "summaries": {
+    "night-trains": {
+      "tldr": "Europe’s night trains are returning after decades of decline. Sleeper services were cut through the 1990s and 2000s as budget airlines expanded, and by 2016 one major central European operator had ended its overnight network. But bookings have roughly tripled since 2019. New routes are opening, and popular summer departures can sell out months ahead.\n\nClimate is part of the appeal: sleeper trains produce far less carbon than comparable flights. But environmental concerns alone did not revive the service. For many travellers, flying has become an exhausting chain of queues, distant airports, extra fees and early arrivals. A short flight can consume much of a day, while a night train lets passengers travel as they sleep and arrive in the city centre by morning.\n\nThe trains have improved, too. New sleeping cars offer private cabins, showers and power at every berth, while redesigned couchettes provide more privacy. Breakfast is delivered at a time chosen by the passenger. Yet regular riders often point to a less tangible benefit: the journey feels like reclaimed time. With no calls to take or plans to keep, passengers can read, eat slowly and sleep as the train carries them to another city.\n\nThat experience is difficult for airlines to replicate, but the night train’s future is far from assured. Sleeping cars carry fewer passengers than day coaches and require more staff. Track charges can make routes unprofitable, while cross-border bookings remain fragmented across operators and websites. Delays on one line can also disrupt connections across an entire journey.\n\nOperators are betting that demand will last, political support for rail will continue, and larger networks will make their high fixed costs easier to manage. So far, the revival is visible on crowded platforms, where many younger passengers are trying a sleeper for the first time. The appeal is not simply reaching a destination more sustainably. It is travelling overnight in a way that feels less like losing time—and more like getting it back."
+    },
+    "repair": {
+      "tldr": "Repair cafés are turning broken appliances into lessons in how things work. At monthly gatherings, volunteers help people fix toasters, lamps and other household objects, often at no cost. The goal is not simply to save money. It is to understand and keep the things people have lived with—and to pass practical skills from experienced repairers to anyone willing to learn.\n\nThe revival has been driven by three changes. Right-to-repair laws in parts of the United States and the European Union increasingly require manufacturers to provide spare parts and repair information, and some rules penalize companies that block repairs. Online videos have also made do-it-yourself fixes easier, offering clear, model-specific instructions. And as the price gap widens between cheap disposable goods and more valuable products, repairing an expensive phone or appliance can make sense.\n\nAt the repair tables, people describe motives such as curiosity, satisfaction and stubbornness. One visitor, waiting for a hair dryer to be fixed, said she wanted to know what was inside it. Volunteers, many of them retired engineers and electricians, value the chance to share skills that were once overlooked. The cafés are less like free repair shops than places where confidence and competence are built one object at a time.\n\nThe movement has limits. Some products are designed in ways that make repair impossible, some fixes are not worthwhile, and repair cafés remain small compared with the volume of goods produced and discarded. They will not solve the global waste problem on their own.\n\nBut they may be changing what people expect. More consumers are beginning to assume that a broken object should be openable, understandable and repairable—and to question products designed to be thrown away. At one community hall, a record player leaves working, most of the toasters are fixed, and a handwritten notice invites people to bring the thing they were about to discard."
+    }
+  },
+  "clips": [
+    {
+      "article": "night-trains",
+      "mode": "tldr",
+      "voice": "marin",
+      "style": "Neutral",
+      "file": "night-trains-tldr-marin-neutral.m4a",
+      "durationSec": 120.6,
+      "words": 327,
+      "lowestMatch": 1
+    },
+    {
+      "article": "night-trains",
+      "mode": "tldr",
+      "voice": "cedar",
+      "style": "Neutral",
+      "file": "night-trains-tldr-cedar-neutral.m4a",
+      "durationSec": 116.9,
+      "words": 327,
+      "lowestMatch": 1
+    },
+    {
+      "article": "night-trains",
+      "mode": "tldr",
+      "voice": "cedar",
+      "style": "Storytelling",
+      "file": "night-trains-tldr-cedar-storytelling.m4a",
+      "durationSec": 128.2,
+      "words": 327,
+      "lowestMatch": 1
+    },
+    {
+      "article": "repair",
+      "mode": "tldr",
+      "voice": "marin",
+      "style": "Neutral",
+      "file": "repair-tldr-marin-neutral.m4a",
+      "durationSec": 115.3,
+      "words": 311,
+      "lowestMatch": 1
+    }
+  ]
+}

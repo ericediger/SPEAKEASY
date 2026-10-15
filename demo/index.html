@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpeakEasy — live demo</title>
+  <meta name="description" content="SpeakEasy running on a fictional article: the real Chrome side panel, with pre-generated narration. Nothing is saved and no API key is needed." />
+  <!--
+    SpeakEasy demo: a Chrome-style window with a fictional magazine article and the extension's REAL side
+    panel (demo/app/, a copy of the build) on the right. mocks.js stands in for chrome.* and the service
+    worker and plays narration that was pre-generated with SpeakEasy itself (demo/audio/). The explainer
+    video is recorded from this same page: the hash picks the scene (#open #listen #modes #voice #persist
+    #setup). The window is laid out at 1600x900 and scaled to fit; at 2400x1350 it is exactly 1.5x.
+  -->
+  <link rel="icon" href="app/icons/icon48.svg" />
+  <link rel="stylesheet" href="stage.css" />
+  <script src="articles.js"></script>
+  <script src="mocks.js"></script>
+</head>
+<body>
+  <div id="stage">
+    <div class="cx-tabs">
+      <div class="cx-lights"><i></i><i></i><i></i></div>
+      <div id="tabStrip" class="cx-tabstrip"></div>
+      <div class="cx-newtab">+</div>
+    </div>
+
+    <div class="cx-toolbar">
+      <span class="cx-nav">&#8592;</span><span class="cx-nav">&#8594;</span><span class="cx-nav">&#8635;</span>
+      <div class="cx-omni"><span class="cx-tune"></span><span id="omniText"></span></div>
+      <div class="cx-ext">
+        <button id="extBtn" class="cx-ext-btn" title="Open SpeakEasy"><img src="app/icons/icon48.svg" alt="" /></button>
+        <span class="cx-puzzle" title="Extensions"></span>
+        <span class="cx-avatar">AR</span>
+      </div>
+    </div>
+
+    <div class="cx-body" id="cxBody">
+      <main class="cx-page" id="articlePage">
+        <div class="ar-top">
+          <div class="ar-wordmark">The Meridian Review</div>
+          <nav class="ar-nav"><span>Culture</span><span>Ideas</span><span>Science</span><span>Letters</span><span>Archive</span></nav>
+          <div class="ar-tools"><span class="ar-search"></span><span class="ar-subscribe">Subscribe</span></div>
+        </div>
+        <article class="ar-article" id="article"></article>
+      </main>
+
+      <div class="cx-page op-page cx-hidden" id="optionsPage"></div>
+
+      <aside class="cx-side" id="side">
+        <div class="cx-side-head">
+          <img src="app/icons/icon16.svg" alt="" /><span>SpeakEasy</span>
+          <span class="cx-side-actions"><i class="cx-pin"></i><i class="cx-close">&times;</i></span>
+        </div>
+        <div id="panel"></div>
+      </aside>
+    </div>
+
+    <div class="cx-demo-note" id="demoNote">
+      Demo · fictional article · the side panel is SpeakEasy's real code; its narration was pre-generated with SpeakEasy · nothing is sent or saved
+    </div>
+  </div>
+  <script src="stage.js"></script>
+</body>
+</html>

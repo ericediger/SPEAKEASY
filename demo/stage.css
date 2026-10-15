@@ -1,0 +1,141 @@
+/* Demo stage: a light Chrome-style window around SpeakEasy's real side panel. Classes are prefixed
+   (cx- chrome, ar- article, op- options) so nothing collides with the extension's own stylesheets,
+   which are loaded after this file. */
+
+html { background: #dfe3e8; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { display: grid; place-items: center; }
+::-webkit-scrollbar { width: 0; height: 0; }
+
+#stage {
+  zoom: var(--z, 1);
+  width: 1600px; height: 900px; overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  color: #202124; background: #fff;
+}
+.cx-hidden { display: none !important; }
+
+/* ---- Tab strip ---- */
+.cx-tabs { height: 38px; flex: none; display: flex; align-items: flex-end; gap: 2px; padding: 0 10px; background: #dfe3e8; }
+.cx-lights { align-self: center; display: flex; gap: 8px; margin: 0 16px 0 4px; }
+.cx-lights i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+.cx-lights i:nth-child(2) { background: #febc2e; }
+.cx-lights i:nth-child(3) { background: #28c840; }
+.cx-tabstrip { display: flex; align-items: flex-end; gap: 2px; }
+.cx-tab {
+  height: 31px; width: 250px; padding: 0 10px 0 12px; border-radius: 10px 10px 0 0;
+  display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #3c4043; cursor: pointer;
+}
+.cx-tab.active { background: #fff; }
+.cx-tab-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-x { color: #5f6368; font-size: 15px; line-height: 1; }
+.cx-fav { width: 16px; height: 16px; border-radius: 4px; flex: none; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #fff; }
+.cx-fav-mr { background: #1f2a37; font-family: Charter, Georgia, serif; }
+.cx-fav-se { background: #0066cc; }
+.cx-fav-se::after { content: ""; width: 0; height: 0; border-left: 6px solid #fff; border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-left: 1px; }
+.cx-newtab { align-self: center; margin-left: 6px; color: #5f6368; font-size: 18px; }
+
+/* ---- Toolbar ---- */
+.cx-toolbar {
+  height: 44px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 10px;
+  background: #fff; border-bottom: 1px solid #e3e6ea;
+}
+.cx-nav { width: 30px; height: 30px; display: grid; place-items: center; color: #5f6368; font-size: 17px; border-radius: 50%; }
+.cx-omni {
+  flex: 1; height: 32px; margin: 0 8px; padding: 0 14px; border-radius: 16px; background: #f1f3f4;
+  display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #202124; white-space: nowrap; overflow: hidden;
+}
+.cx-tune { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #5f6368; position: relative; flex: none; }
+.cx-tune::after { content: ""; position: absolute; left: 3px; top: 3px; width: 4px; height: 4px; border-radius: 50%; background: #5f6368; }
+.cx-ext { display: flex; align-items: center; gap: 4px; }
+.cx-ext-btn {
+  width: 32px; height: 32px; border: none; border-radius: 50%; background: transparent;
+  display: grid; place-items: center; cursor: pointer; transition: background .2s; padding: 0;
+}
+.cx-ext-btn img { width: 20px; height: 20px; border-radius: 4px; }
+.cx-ext-btn.on { background: #e3f1fa; }
+.cx-puzzle {
+  width: 32px; height: 32px; border-radius: 50%; background: center / 18px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%235f6368' d='M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z'/%3E%3C/svg%3E");
+}
+.cx-avatar {
+  width: 26px; height: 26px; margin-left: 6px; border-radius: 50%; background: #6b5b95; color: #fff;
+  font-size: 11px; font-weight: 600; display: grid; place-items: center;
+}
+
+/* ---- Body: page + side panel ---- */
+.cx-body { flex: 1; min-height: 0; display: flex; background: #fff; }
+.cx-page { flex: 1; min-width: 0; position: relative; overflow: hidden; }
+.cx-side {
+  flex: none; width: 0; overflow: hidden; display: flex; flex-direction: column;
+  background: #060810; border-left: 1px solid #dadce0;
+  transition: width .6s cubic-bezier(.2, .8, .2, 1);
+}
+.cx-side.open { width: 588px; }
+.cx-side > * { width: 588px; flex: none; }
+.cx-side-head {
+  height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  font-size: 13px; font-weight: 600; color: #202124; background: #fff; border-bottom: 1px solid #e8eaed;
+}
+.cx-side-head img { width: 16px; height: 16px; border-radius: 3px; }
+.cx-side-actions { margin-left: auto; display: flex; gap: 14px; align-items: center; color: #5f6368; }
+.cx-pin { width: 10px; height: 13px; border: 2px solid #5f6368; border-radius: 3px 3px 5px 5px; }
+.cx-close { font-style: normal; font-size: 18px; line-height: 1; }
+
+/* The real panel: 420 CSS px wide (a typical side panel), drawn at 1.4x inside the 1.5x stage.
+   These rules mirror the `body` rules in src/styles/popup.css, which cannot apply here. */
+#panel {
+  zoom: 1.4; width: 420px; height: 560px; overflow-y: auto; overflow-x: hidden; flex: 1;
+  background: #060810; color: #EEF0F4;
+  font-family: 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif; font-size: 13px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Fictional magazine article ---- */
+.ar-top { height: 58px; display: flex; align-items: center; gap: 28px; padding: 0 36px; border-bottom: 1px solid #e6e2da; background: #fff; }
+.ar-wordmark { font-family: Charter, "Iowan Old Style", Georgia, serif; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; color: #1f2a37; white-space: nowrap; }
+.ar-nav { display: flex; gap: 22px; font-size: 13.5px; font-weight: 500; color: #4b5563; margin-left: 8px; }
+.ar-tools { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.ar-search { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #6b7280; position: relative; }
+.ar-search::after { content: ""; position: absolute; width: 2px; height: 7px; background: #6b7280; right: -4px; bottom: -5px; transform: rotate(-45deg); }
+.ar-subscribe { font-size: 13px; font-weight: 600; color: #fff; background: #1f2a37; padding: 7px 14px; border-radius: 999px; }
+.ar-article { height: calc(100% - 58px); overflow: hidden; padding: 34px 0 0; }
+.ar-col { width: 700px; margin: 0 auto; }
+.ar-kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #b3261e; margin-bottom: 14px; }
+.ar-h1 { font-family: Charter, "Iowan Old Style", Georgia, serif; font-size: 44px; line-height: 1.12; font-weight: 700; letter-spacing: -0.6px; color: #111827; margin: 0 0 16px; }
+.ar-dek { font-family: Charter, "Iowan Old Style", Georgia, serif; font-size: 21px; line-height: 1.45; color: #4b5563; margin: 0 0 22px; }
+.ar-byline { display: flex; align-items: center; gap: 12px; font-size: 13.5px; color: #4b5563; margin-bottom: 26px; }
+.ar-av { width: 36px; height: 36px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+.ar-byline b { color: #111827; font-weight: 600; }
+.ar-byline .ar-dot { width: 3px; height: 3px; border-radius: 50%; background: #9ca3af; }
+.ar-hero { height: 300px; border-radius: 12px; overflow: hidden; position: relative; margin-bottom: 10px; }
+.ar-hero.train { background: linear-gradient(180deg, #0b1630 0%, #16285a 45%, #0a1226 46%, #1a2340 100%); }
+.ar-hero.train::before { content: ""; position: absolute; left: 6%; right: 6%; top: 46%; height: 70px; border-radius: 8px; background: #27314c;
+  box-shadow: inset 0 -10px 0 #1b2338; }
+.ar-hero.train::after { content: ""; position: absolute; left: 9%; right: 9%; top: 50%; height: 30px;
+  background: repeating-linear-gradient(90deg, #ffe5a3 0 46px, transparent 46px 72px); opacity: .9; filter: blur(.3px); box-shadow: 0 18px 40px rgba(255, 229, 163, .25); }
+.ar-hero.tools { background: linear-gradient(135deg, #f6e7c8 0%, #e9c89b 50%, #c98a5b 100%); }
+.ar-hero.tools::before { content: ""; position: absolute; left: 12%; top: 22%; width: 76%; height: 56%; border-radius: 14px; background: rgba(255,255,255,.35); box-shadow: inset 0 0 0 2px rgba(120, 70, 30, .25); }
+.ar-hero.tools::after { content: ""; position: absolute; left: 20%; top: 36%; width: 60%; height: 28%;
+  background: repeating-linear-gradient(90deg, #7a4a24 0 14px, transparent 14px 44px); border-radius: 6px; opacity: .75; }
+.ar-cap { font-size: 12.5px; color: #6b7280; margin-bottom: 26px; }
+.ar-body p { font-family: Charter, "Iowan Old Style", Georgia, serif; font-size: 18.5px; line-height: 1.68; color: #1f2937; margin: 0 0 20px; }
+.ar-body p:first-child::first-letter { float: left; font-size: 60px; line-height: .9; padding: 6px 10px 0 0; font-weight: 700; color: #111827; }
+
+/* ---- Settings page (the extension's options page, inlined). Mirrors the body rule in src/options/options.css. ---- */
+/* Drawn at 0.8x so the whole page, Save button included, fits the window the way it does in a taller Chrome window. */
+.op-page { zoom: .8; background: #f5f5f5; color: #1a1a1a; font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; overflow-y: auto; }
+
+/* ---- Demo note, pinned to the bottom edge of the window ---- */
+.cx-demo-note {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 22px; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #5f6368; background: #f1f3f4; border-top: 1px solid #e3e6ea; letter-spacing: .01em;
+}
+#stage.recording .cx-demo-note { display: none; }
+
+/* ---- Recorder overlays, scaled to the 1.5x stage ---- */
+#__cursor { width: 42px !important; height: 42px !important; }
+#__cursor svg { width: 42px !important; height: 42px !important; }
+#__ripple { width: 66px !important; height: 66px !important; margin: -33px 0 0 -33px !important; border-width: 4px !important; }
+#__spot { border-radius: 14px !important; outline-width: 3px !important; }

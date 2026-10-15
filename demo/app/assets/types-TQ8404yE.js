@@ -1,0 +1,1 @@
+const a=150,s={tldr:300,medium:750},e=["marin","cedar","alloy","ash","ballad","coral","echo","sage","shimmer","verse"],o="marin",r=["Neutral","Energetic","Calm","Professional","Conversational","Storytelling"];export{o as D,r as S,e as V,a as W,s as a};
