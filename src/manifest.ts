@@ -3,12 +3,18 @@ import { ManifestV3Export } from '@crxjs/vite-plugin'
 const manifest: ManifestV3Export = {
   manifest_version: 3,
   name: 'SpeakEasy',
-  version: '2.0.1',
+  version: '2.1.0',
   description: 'AI-powered article summarization and text-to-speech',
-  permissions: ['activeTab', 'storage', 'scripting'],
+  minimum_chrome_version: '116', // chrome.sidePanel.setPanelBehavior
+  permissions: ['activeTab', 'storage', 'scripting', 'sidePanel'],
   host_permissions: ['https://api.openai.com/*'],
+  // The player opens in the side panel (see setPanelBehavior in the service worker) so it stays open,
+  // and keeps playing, while the user clicks around the page, switches tabs, or follows links
+  side_panel: {
+    default_path: 'src/popup/popup.html',
+  },
   action: {
-    default_popup: 'src/popup/popup.html',
+    default_title: 'Open SpeakEasy',
     default_icon: {
       '16': 'icons/icon16.svg',
       '48': 'icons/icon48.svg',

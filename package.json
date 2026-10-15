@@ -1,6 +1,6 @@
 {
   "name": "speakeasy",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Chrome extension for AI-powered article summarization and text-to-speech",
   "type": "module",
   "scripts": {

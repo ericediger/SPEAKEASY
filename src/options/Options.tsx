@@ -207,7 +207,7 @@ export function Options() {
       </main>
 
       <footer className="options-footer">
-        <p>SpeakEasy v2.0.1</p>
+        <p>SpeakEasy v2.1.0</p>
       </footer>
     </div>
   )

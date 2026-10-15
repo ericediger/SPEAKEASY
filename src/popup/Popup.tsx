@@ -17,10 +17,20 @@ function estimateMinutes(mode: PlaybackMode, wordCount: number): string {
 type AppState = 'loading' | 'no-api-key' | 'no-article' | 'ready' | 'error'
 type PlayerState = 'idle' | 'generating' | 'ready' | 'playing' | 'paused'
 
+// The article in this window's active tab
+async function fetchActiveArticle(): Promise<ArticleContent | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab?.id) return null
+  const res = await chrome.runtime.sendMessage({ type: 'GET_ARTICLE', payload: { tabId: tab.id } })
+  return res.success ? res.article : null
+}
+
 export function Popup() {
   const [appState, setAppState] = useState<AppState>('loading')
   const [error, setError] = useState('')
   const [article, setArticle] = useState<ArticleContent | null>(null)
+  // A different page the user moved to while audio for `article` is loaded
+  const [nextArticle, setNextArticle] = useState<ArticleContent | null>(null)
   const [settings, setSettings] = useState<UserSettings | null>(null)
 
   const [mode, setMode] = useState<PlaybackMode>('tldr')
@@ -43,28 +53,80 @@ export function Popup() {
   const summaryRef = useRef('')
   const hasGeneratedRef = useRef(false)
   const autoPlayRef = useRef(false) // start playback once the new audio can play through
+  const generateOnSwitchRef = useRef(false) // generate once a newly chosen article is in state
+  const requestRef = useRef(0) // bumped on each request and on reset, so stale results are dropped
 
-  useEffect(() => {
-    async function init() {
-      try {
-        const settingsRes = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' })
-        setSettings(settingsRes)
-        setVoice(settingsRes.defaultVoice || DEFAULT_VOICE)
-        setSpeed(settingsRes.defaultSpeed || 1.0)
-        setStyle(settingsRes.defaultStyle || 'Neutral')
-        if (!settingsRes.apiKey) { setAppState('no-api-key'); return }
+  // Latest values for the tab and storage listeners, which are registered once
+  const articleRef = useRef(article)
+  articleRef.current = article
+  const appStateRef = useRef(appState)
+  appStateRef.current = appState
+  const busyRef = useRef(false)
+  busyRef.current = !!audioUrl || playerState === 'generating'
 
-        const articleRes = await chrome.runtime.sendMessage({ type: 'GET_ARTICLE' })
-        if (!articleRes.success) { setAppState('no-article'); setError(articleRes.error || ''); return }
+  const init = useCallback(async () => {
+    try {
+      const settingsRes = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' })
+      setSettings(settingsRes)
+      setVoice(settingsRes.defaultVoice || DEFAULT_VOICE)
+      setSpeed(settingsRes.defaultSpeed || 1.0)
+      setStyle(settingsRes.defaultStyle || 'Neutral')
+      if (!settingsRes.apiKey) { setAppState('no-api-key'); return }
 
-        setArticle(articleRes.article)
-        setAppState('ready')
-      } catch (err) {
-        setAppState('error')
-        setError(err instanceof Error ? err.message : 'Failed to initialize')
-      }
+      const found = await fetchActiveArticle()
+      if (!found) { setAppState('no-article'); return }
+
+      setArticle(found)
+      setAppState('ready')
+    } catch (err) {
+      setAppState('error')
+      setError(err instanceof Error ? err.message : 'Failed to initialize')
     }
-    init()
+  }, [])
+
+  useEffect(() => { init() }, [init])
+
+  // The side panel stays open, so pick up an API key saved in the settings tab
+  useEffect(() => {
+    const onChanged = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
+      if (area === 'sync' && changes.apiKey && !busyRef.current) init()
+    }
+    chrome.storage.onChanged.addListener(onChanged)
+    return () => chrome.storage.onChanged.removeListener(onChanged)
+  }, [init])
+
+  // Follow this window's active tab. When nothing is loaded, switch to the new page's article;
+  // otherwise keep the current audio and offer the new page instead of interrupting playback.
+  useEffect(() => {
+    let windowId: number | undefined
+    chrome.windows.getCurrent().then(w => { windowId = w.id })
+
+    const refresh = async () => {
+      if (appStateRef.current === 'loading' || appStateRef.current === 'no-api-key') return
+      const found = await fetchActiveArticle().catch(() => null)
+      const isNew = !!found && found.url !== articleRef.current?.url
+      if (busyRef.current) {
+        setNextArticle(isNew ? found : null)
+        return
+      }
+      setNextArticle(null)
+      if (!found) { setAppState('no-article'); return }
+      if (isNew) { setArticle(found); setError('') }
+      setAppState('ready')
+    }
+
+    const onActivated = (info: chrome.tabs.TabActiveInfo) => {
+      if (info.windowId === windowId) refresh()
+    }
+    const onUpdated = (_tabId: number, change: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+      if (change.status === 'complete' && tab.active && tab.windowId === windowId) refresh()
+    }
+    chrome.tabs.onActivated.addListener(onActivated)
+    chrome.tabs.onUpdated.addListener(onUpdated)
+    return () => {
+      chrome.tabs.onActivated.removeListener(onActivated)
+      chrome.tabs.onUpdated.removeListener(onUpdated)
+    }
   }, [])
 
   useEffect(() => {
@@ -111,6 +173,7 @@ export function Popup() {
 
   const generate = useCallback(async () => {
     if (!article || !settings?.apiKey) return
+    const request = ++requestRef.current
 
     if (audioRef.current) audioRef.current.pause()
 
@@ -126,16 +189,19 @@ export function Popup() {
         type: 'SUMMARIZE',
         payload: { text: article.bodyText, mode, url: article.url },
       })
+      if (request !== requestRef.current) return // don't narrate a summary the user moved on from
       if (!sumRes.success) throw new Error(sumRes.error || 'Failed to summarize')
       summaryRef.current = sumRes.summary
 
       const url = await loadAudio(article.url, sumRes.summary)
+      if (request !== requestRef.current) return
       // The user pressed Play to generate, so play as soon as the audio is ready
       autoPlayRef.current = true
       setAudioUrl(url)
       setPlayerState('ready')
       hasGeneratedRef.current = true
     } catch (err) {
+      if (request !== requestRef.current) return
       setError(err instanceof Error ? err.message : 'Error')
       setPlayerState('idle')
     }
@@ -144,6 +210,7 @@ export function Popup() {
   // Regenerate audio only (reuses existing summary) when voice or style changes
   const regenerateAudio = useCallback(async () => {
     if (!article || !settings?.apiKey || !summaryRef.current) return
+    const request = ++requestRef.current
 
     const wasPlaying = playerState === 'playing'
     if (audioRef.current) audioRef.current.pause()
@@ -157,11 +224,13 @@ export function Popup() {
 
     try {
       const url = await loadAudio(article.url, summaryRef.current)
+      if (request !== requestRef.current) return
       // Keep playing in the new voice or style if audio was playing before
       autoPlayRef.current = wasPlaying
       setAudioUrl(url)
       setPlayerState('ready')
     } catch (err) {
+      if (request !== requestRef.current) return
       setError(err instanceof Error ? err.message : 'Error')
       setPlayerState('idle')
     }
@@ -187,21 +256,42 @@ export function Popup() {
     prevStyleRef.current = style
   }, [style, regenerateAudio])
 
-  // Switching mode discards the other mode's audio; Play generates (or loads from cache) the new one
+  // Discard the loaded audio so Play generates (or loads from cache) audio for the current article and mode
+  const resetPlayer = useCallback(() => {
+    requestRef.current++
+    if (audioRef.current) audioRef.current.pause()
+    setAudioUrl('')
+    setPlayerState('idle')
+    setCurrentTime(0)
+    setDuration(0)
+    setAudioReady(false)
+    summaryRef.current = ''
+    hasGeneratedRef.current = false
+  }, [])
+
+  // Switching mode discards the other mode's audio, or cancels generating it
   const prevModeRef = useRef(mode)
   useEffect(() => {
-    if (prevModeRef.current !== mode && hasGeneratedRef.current) {
-      if (audioRef.current) audioRef.current.pause()
-      setAudioUrl('')
-      setPlayerState('idle')
-      setCurrentTime(0)
-      setDuration(0)
-      setAudioReady(false)
-      summaryRef.current = ''
-      hasGeneratedRef.current = false
-    }
+    if (prevModeRef.current !== mode && (hasGeneratedRef.current || busyRef.current)) resetPlayer()
     prevModeRef.current = mode
-  }, [mode])
+  }, [mode, resetPlayer])
+
+  // Stop the current audio and start the page the user moved to
+  const listenToNextArticle = () => {
+    if (!nextArticle) return
+    resetPlayer()
+    setError('')
+    setArticle(nextArticle)
+    setNextArticle(null)
+    generateOnSwitchRef.current = true
+  }
+
+  useEffect(() => {
+    if (generateOnSwitchRef.current) {
+      generateOnSwitchRef.current = false
+      generate()
+    }
+  }, [article, generate])
 
   const play = () => {
     if (!audioRef.current || !audioReady) return
@@ -279,6 +369,16 @@ export function Popup() {
           <span className="active-mode">{MODE_LABELS[mode].toUpperCase()}</span>
         </div>
       </div>
+
+      {nextArticle && (
+        <div className="next-article">
+          <div className="next-article-text">
+            <span className="next-article-label">You're now on</span>
+            <span className="next-article-title">{nextArticle.title}</span>
+          </div>
+          <button className="next-article-btn" onClick={listenToNextArticle}>Listen to this page</button>
+        </div>
+      )}
 
       <div className="section">
         <div className="section-label">Mode</div>
