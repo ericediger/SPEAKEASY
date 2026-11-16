@@ -1,0 +1,187 @@
+HOW TO INSTALL SPEAKEASY
+========================
+
+SpeakEasy is a Chrome extension that summarizes articles and reads them
+aloud. Installing it takes about 10 minutes. You don't need to know
+anything about computers beyond clicking and copy-paste.
+
+You need:
+  - Google Chrome on a Mac or Windows computer
+  - An OpenAI account with at least $5 of credit (step 6 explains how).
+    SpeakEasy itself is free. OpenAI charges your account a few cents
+    each time SpeakEasy summarizes or reads an article.
+
+
+STEP 1. PUT THE SPEAKEASY FOLDER SOMEWHERE SAFE
+-----------------------------------------------
+
+You've already unzipped the download, because you're reading this file.
+The folder this file is in is called "SpeakEasy".
+
+  1. Move the SpeakEasy folder into your Documents folder.
+     (Drag it there. Don't leave it in Downloads: people clear out
+     Downloads, and if the folder is deleted, SpeakEasy stops working.)
+
+  2. From now on, leave the folder there. Don't rename it, move it or
+     delete it. Chrome runs SpeakEasy straight from this folder.
+
+
+STEP 2. OPEN CHROME'S EXTENSIONS PAGE
+-------------------------------------
+
+  1. Open Google Chrome.
+  2. Click the address bar at the top (where you normally type a website).
+  3. Type exactly this and press Enter:
+
+         chrome://extensions
+
+  You'll see a page titled "Extensions".
+
+
+STEP 3. TURN ON DEVELOPER MODE
+------------------------------
+
+  In the TOP RIGHT corner of the Extensions page there's a switch labelled
+  "Developer mode". Click it so it turns on (it turns blue).
+
+  A new row of buttons appears near the top left of the page.
+
+  (Developer mode only lets you install extensions from a folder, like
+  this one. It doesn't change anything else about Chrome.)
+
+
+STEP 4. LOAD SPEAKEASY
+----------------------
+
+  1. Click the "Load unpacked" button (top left).
+  2. A window opens for choosing a folder. Go to your Documents folder.
+  3. Click the SpeakEasy folder ONCE, so it's highlighted.
+     Don't double-click into it.
+  4. Click "Select" (on a Mac) or "Select Folder" (on Windows).
+
+  A SpeakEasy card appears on the Extensions page. That means it worked.
+
+  If Chrome says "Manifest file is missing or unreadable", you picked the
+  wrong folder. Try again and pick the SpeakEasy folder that has this file
+  (HOW TO INSTALL.txt) and a file called manifest.json directly inside it.
+  On Windows, unzipping sometimes makes a folder inside a folder: open the
+  outer one and pick the SpeakEasy folder inside.
+
+
+STEP 5. PIN SPEAKEASY TO YOUR TOOLBAR
+-------------------------------------
+
+  1. At the top right of Chrome, to the right of the address bar, click
+     the puzzle-piece icon (it's called "Extensions").
+  2. Find SpeakEasy in the list and click the pin icon next to it.
+
+  The SpeakEasy icon now stays in your toolbar.
+
+
+STEP 6. GET AN OPENAI API KEY
+-----------------------------
+
+  An API key is like a password that lets SpeakEasy use your OpenAI
+  account. It's stored only in your Chrome. There's no SpeakEasy server.
+
+  1. Go to https://platform.openai.com and sign up or log in.
+     (A ChatGPT subscription is NOT the same thing and doesn't work here.
+     You need credit on the OpenAI Platform.)
+
+  2. Add credit: go to https://platform.openai.com/settings/organization/billing
+     (or click the gear icon for Settings, then "Billing") and add at
+     least $5. That's enough for about 100 TL;DR summaries.
+
+  3. Create the key: go to https://platform.openai.com/api-keys
+     and click "Create new secret key". Give it any name, such as
+     SpeakEasy, and click "Create secret key".
+
+  4. Click "Copy". The key is a long line of text starting with "sk-".
+
+     OpenAI shows the key only once. If you lose it, just create a new one.
+     Don't share it with anyone or post it online.
+
+
+STEP 7. PUT YOUR KEY INTO SPEAKEASY
+-----------------------------------
+
+  1. Click the SpeakEasy icon in your toolbar. A panel opens on the right
+     side of Chrome, saying "Welcome to SpeakEasy".
+  2. Click "Open Settings". A settings page opens in a new tab.
+  3. Click in the "OpenAI API Key" box and paste your key
+     (Cmd+V on a Mac, Ctrl+V on Windows).
+  4. Click "Validate". The box turns green if the key works.
+  5. Click "Save Settings" at the bottom.
+
+  Optional bonus voice: SpeakEasy includes the creator's own voice,
+  called "Creator". It's read aloud by a different service, ElevenLabs,
+  so it needs an ElevenLabs API key in the "ElevenLabs API Key" box. If
+  you don't have one, leave that box empty and use the other voices.
+
+
+STEP 8. LISTEN TO AN ARTICLE
+----------------------------
+
+  1. Open any news article or blog post.
+  2. Click the SpeakEasy icon. The panel shows the article's title.
+  3. Pick a length: TL;DR (about 2 minutes), Medium (about 5) or Full.
+  4. Press the big play button. The first time takes a little while
+     (often under a minute) while the audio is made. After that it plays.
+
+  You can change the voice, the speaking style and the speed at the
+  bottom of the panel. The panel stays open while you browse.
+
+
+IF SOMETHING GOES WRONG
+-----------------------
+
+  "Manifest file is missing or unreadable"
+      You picked the wrong folder in step 4. See the note there.
+
+  There's no "Developer mode" switch, or it's greyed out
+      Your Chrome is managed by a school or employer that blocks it.
+      Use a personal computer or ask your IT department.
+
+  Chrome shows a message about developer mode extensions
+      That's normal for extensions installed from a folder. Close the
+      message. Don't click "Remove" or "Disable" on SpeakEasy.
+
+  The SpeakEasy icon disappeared
+      Chrome can't find the folder any more: it was moved, renamed or
+      deleted. Put the SpeakEasy folder back in Documents, then go to
+      chrome://extensions and click the reload arrow on the SpeakEasy
+      card. If the card is gone, do step 4 again.
+
+  "Invalid API key"
+      Copy the key again and paste it with nothing before or after it.
+      Make sure your OpenAI account has credit (step 6, part 2).
+
+  "No Article Found"
+      SpeakEasy works on pages with an article on them. It can't read
+      home pages, search results, videos or PDFs.
+
+  Playback fails with a message about credit, quota or billing
+      Your OpenAI credit has run out. Add more (step 6, part 2).
+
+
+UPDATING TO A NEW VERSION
+-------------------------
+
+  1. Download and unzip the new version.
+  2. Open your existing SpeakEasy folder in Documents and delete
+     everything inside it (keep the folder itself).
+  3. Copy everything from inside the new SpeakEasy folder into your
+     existing one.
+  4. Go to chrome://extensions and click the reload arrow on the
+     SpeakEasy card.
+
+  Keeping the same folder in the same place keeps your API key and
+  settings. If you load a folder from a different place, Chrome treats it
+  as a new extension and you'll need to enter your key again.
+
+
+REMOVING SPEAKEASY
+------------------
+
+  Go to chrome://extensions, click "Remove" on the SpeakEasy card, then
+  delete the SpeakEasy folder from Documents.

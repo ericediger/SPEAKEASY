@@ -7,6 +7,9 @@ dist/
 # Reading test output
 test-output/
 
+# Release zips (npm run package)
+release/
+
 # Logs
 *.log
 npm-debug.log*
