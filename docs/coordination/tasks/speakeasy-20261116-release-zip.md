@@ -18,7 +18,7 @@ closed_reason: none
 branch: speakeasy-release-zip
 base_branch: speakeasy-elevenlabs-bonus-voice (stacked on PR 5 so the first zip includes the bonus voice; retarget to main once PR 5 merges)
 worktree: main checkout
-latest_commit: d2eca21 (base)
+latest_commit: 88662d4
 uncommitted_changes: none from this task (committed on the task branch; see Log)
 depends_on: [speakeasy-20261116-elevenlabs-bonus-voice]
 blocks: []
@@ -29,7 +29,7 @@ milestones:
   accepted: no
   merged: no
   deployed: no
-updated_at: 2026-11-16T15:33-05:00
+updated_at: 2026-11-16T15:40-05:00
 updated_by: Claude Code (session unknown, see owner)
 ---
 
@@ -60,7 +60,7 @@ Let people without developer tools install SpeakEasy from a zip attached to a Gi
 ## Remaining
 
 - Eric test-installs the zip in Chrome by following the guide.
-- Push, PR, merge PR 5 then this one; then publish a GitHub release with the zip attached (each needs Eric's OK).
+- Merge PR 5, then this PR (Eric only); then publish a GitHub release with the zip attached (each needs Eric's OK).
 
 ## Blockers
 
@@ -84,7 +84,8 @@ Eric unzips `release/speakeasy-2.1.0.zip` and installs it by following `HOW TO I
 
 ## Evidence
 
-- Commit on branch `speakeasy-release-zip` (see Log).
+- Commit 88662d4 on branch `speakeasy-release-zip`, pushed.
+- PR: https://github.com/ericediger/SPEAKEASY/pull/6 (base: `speakeasy-elevenlabs-bonus-voice`)
 
 ## Discrepancies found on resume
 
@@ -95,3 +96,4 @@ Eric unzips `release/speakeasy-2.1.0.zip` and installs it by following `HOW TO I
 - 2026-11-16T15:29-05:00 · Claude Code (session unknown) · created · requested by Eric in chat; branch created from main at 1dfbf4a
 - 2026-11-16T15:30-05:00 · Claude Code (session unknown) · updated · branch reset onto speakeasy-elevenlabs-bonus-voice (d2eca21) before any commit, so the zip and README include the bonus voice
 - 2026-11-16T15:33-05:00 · Claude Code (session unknown) · updated · implementation complete; npm run package passed; committed on the task branch
+- 2026-11-16T15:40-05:00 · Claude Code (session unknown) · updated · Eric approved push and PR in chat ("Push and open PR"); branch pushed, PR 6 opened, stacked on PR 5
