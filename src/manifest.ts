@@ -7,7 +7,7 @@ const manifest: ManifestV3Export = {
   description: 'AI-powered article summarization and text-to-speech',
   minimum_chrome_version: '116', // chrome.sidePanel.setPanelBehavior
   permissions: ['activeTab', 'storage', 'scripting', 'sidePanel'],
-  host_permissions: ['https://api.openai.com/*'],
+  host_permissions: ['https://api.openai.com/*', 'https://api.elevenlabs.io/*'],
   // The player opens in the side panel (see setPanelBehavior in the service worker) so it stays open,
   // and keeps playing, while the user clicks around the page, switches tabs, or follows links
   side_panel: {

@@ -13,6 +13,7 @@ AI-powered Chrome extension that summarizes web articles and reads them aloud us
 - **Article Extraction** - Automatically extracts article content from any webpage
 - **Three Listening Modes** - TL;DR (~2 min), Medium (~5 min), or the Full article
 - **10 Voices** - Marin and Cedar (recommended), plus Alloy, Ash, Ballad, Coral, Echo, Sage, Shimmer, Verse
+- **Bonus Voice** - The creator's own voice, narrated by ElevenLabs (needs your own ElevenLabs API key)
 - **6 Speaking Styles** - Neutral, Energetic, Calm, Professional, Conversational, Storytelling
 - **Real-time Controls** - Change voice or style mid-playback, audio regenerates automatically
 - **Speed Control** - Adjustable from 0.5x to 2.0x in 0.1 increments
@@ -25,6 +26,7 @@ AI-powered Chrome extension that summarizes web articles and reads them aloud us
 |------|-------|-------|
 | Summarize (TL;DR, Medium) | `gpt-6-luna` | ~300 words for TL;DR, ~750 for Medium. Articles already that short are read in full. |
 | Read aloud (all modes) | `gpt-realtime-2.1-mini` | Text is narrated in ~1 minute segments, several at a time, then joined into one audio file. |
+| Read aloud, bonus voice | ElevenLabs `eleven_multilingual_v2` | Same segments, two at a time, using the creator's voice. Speaking styles adjust the voice's stability and style settings. |
 
 Everything runs in the extension with the user's own key; there is no SpeakEasy server.
 
@@ -38,11 +40,14 @@ Everything runs in the extension with the user's own key; there is no SpeakEasy 
 
 Summaries add less than 0.1¢. Narration is about 2.4¢ per minute of audio; re-narrated segments cost extra.
 
+The bonus voice is narrated on the user's ElevenLabs account instead, using about 1 ElevenLabs character credit per character read (roughly 1,500 for a TL;DR). Its summaries still come from OpenAI. The OpenAI accuracy check doesn't apply to it: ElevenLabs reads the text as given and returns no transcript to compare.
+
 ## Installation
 
 ### Prerequisites
 - Node.js 18+ (to build)
 - OpenAI API key ([get one here](https://platform.openai.com/api-keys)) on an account with prepaid credit (at least $5)
+- Optional, for the bonus voice: an ElevenLabs API key ([get one here](https://elevenlabs.io/app/settings/api-keys)) with text-to-speech access
 
 ### Setup
 
@@ -70,7 +75,8 @@ npm run build
 1. Click the SpeakEasy extension icon
 2. Click the settings icon (top right)
 3. Enter your OpenAI API key
-4. Click **Validate** then **Save Settings**
+4. Optionally, enter an ElevenLabs API key to use the creator's bonus voice
+5. Click **Validate** then **Save Settings**
 
 ## Usage
 
@@ -112,7 +118,7 @@ npm run demo:audio
 - **Frontend**: React 18, TypeScript
 - **Build**: Vite + CRXJS
 - **Storage**: Chrome Storage API (settings), IndexedDB (cache)
-- **APIs**: OpenAI Chat Completions (`gpt-6-luna` summaries), OpenAI Realtime API over WebSocket (`gpt-realtime-2.1-mini` narration)
+- **APIs**: OpenAI Chat Completions (`gpt-6-luna` summaries), OpenAI Realtime API over WebSocket (`gpt-realtime-2.1-mini` narration), ElevenLabs Text to Speech (bonus voice)
 
 ## Project Structure
 
@@ -124,6 +130,7 @@ src/
 │   └── extractor.ts         # Article content extraction
 ├── lib/
 │   ├── cache.ts             # IndexedDB caching layer
+│   ├── elevenlabs.ts        # Bonus voice narration and ElevenLabs key validation
 │   ├── narration.ts         # Realtime narration, accuracy check, WAV assembly
 │   ├── openai.ts            # Summaries and API key validation
 │   ├── storage.ts           # Chrome storage utilities

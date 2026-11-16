@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { VoiceOption, UserSettings, VOICES, DEFAULT_VOICE } from '../lib/types'
+import { VoiceOption, UserSettings, VOICES, DEFAULT_VOICE, CREATOR_VOICE, CREATOR_VOICE_ID, voiceLabel } from '../lib/types'
 import { validateApiKey } from '../lib/openai'
+import { validateElevenLabsKey } from '../lib/elevenlabs'
 
 // OpenAI recommends Marin and Cedar for the best narration quality
 const RECOMMENDED_VOICES: VoiceOption[] = ['marin', 'cedar']
@@ -21,6 +22,9 @@ export function Options() {
   const [isValidating, setIsValidating] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null)
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('')
+  const [elevenLabsKeyValid, setElevenLabsKeyValid] = useState<boolean | null>(null)
+  const [isValidatingElevenLabs, setIsValidatingElevenLabs] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
@@ -28,6 +32,10 @@ export function Options() {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }) as UserSettings
         setApiKey(response.apiKey || '')
+        setElevenLabsApiKey(response.elevenLabsApiKey || '')
+        if (response.elevenLabsApiKey) {
+          setElevenLabsKeyValid(true) // Assume valid if already saved
+        }
         setDefaultVoice(response.defaultVoice || DEFAULT_VOICE)
         setDefaultSpeed(response.defaultSpeed || 1)
         if (response.apiKey) {
@@ -66,6 +74,23 @@ export function Options() {
     }
   }
 
+  // Check the ElevenLabs key can use the creator's voice
+  const handleValidateElevenLabsKey = async () => {
+    if (!elevenLabsApiKey.trim()) {
+      setElevenLabsKeyValid(null)
+      return
+    }
+
+    setIsValidatingElevenLabs(true)
+    try {
+      const problem = await validateElevenLabsKey(elevenLabsApiKey.trim(), CREATOR_VOICE_ID)
+      setElevenLabsKeyValid(!problem)
+      setMessage(problem ? { type: 'error', text: problem } : null)
+    } finally {
+      setIsValidatingElevenLabs(false)
+    }
+  }
+
   // Save settings
   const handleSave = async () => {
     setIsSaving(true)
@@ -76,6 +101,7 @@ export function Options() {
         type: 'SAVE_SETTINGS',
         payload: {
           apiKey: apiKey.trim(),
+          elevenLabsApiKey: elevenLabsApiKey.trim(),
           defaultVoice,
           defaultSpeed,
         },
@@ -146,6 +172,37 @@ export function Options() {
               . Your OpenAI account needs prepaid credit (at least $5) for summaries and narration.
             </p>
           </div>
+
+          <div className="form-group">
+            <label htmlFor="elevenlabs-api-key">ElevenLabs API Key <span className="optional">(optional)</span></label>
+            <div className="api-key-input">
+              <input
+                type="password"
+                id="elevenlabs-api-key"
+                value={elevenLabsApiKey}
+                onChange={e => {
+                  setElevenLabsApiKey(e.target.value)
+                  setElevenLabsKeyValid(null)
+                }}
+                placeholder="sk_..."
+                className={elevenLabsKeyValid === false ? 'invalid' : elevenLabsKeyValid === true ? 'valid' : ''}
+              />
+              <button
+                onClick={handleValidateElevenLabsKey}
+                disabled={isValidatingElevenLabs || !elevenLabsApiKey.trim()}
+                className="validate-button"
+              >
+                {isValidatingElevenLabs ? 'Validating...' : 'Validate'}
+              </button>
+            </div>
+            <p className="help-text">
+              Only needed for the bonus voice from SpeakEasy's creator, which is narrated by{' '}
+              <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener noreferrer">
+                ElevenLabs
+              </a>
+              . Narration in that voice uses your ElevenLabs character credits; summaries still use OpenAI.
+            </p>
+          </div>
         </section>
 
         <section className="settings-section">
@@ -160,8 +217,9 @@ export function Options() {
             >
               {VOICES.map(voice => (
                 <option key={voice} value={voice}>
-                  {voice.charAt(0).toUpperCase() + voice.slice(1)}
+                  {voiceLabel(voice)}
                   {RECOMMENDED_VOICES.includes(voice) ? ' (recommended)' : ''}
+                  {voice === CREATOR_VOICE ? ' (bonus, needs an ElevenLabs key)' : ''}
                 </option>
               ))}
             </select>

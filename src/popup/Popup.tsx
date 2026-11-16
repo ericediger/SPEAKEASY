@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ArticleContent, PlaybackMode, VoiceOption, SpeakingStyle, UserSettings,
-  VOICES, STYLES, DEFAULT_VOICE, SUMMARY_WORDS, WORDS_PER_MINUTE,
+  VOICES, STYLES, DEFAULT_VOICE, SUMMARY_WORDS, WORDS_PER_MINUTE, CREATOR_VOICE, voiceLabel,
 } from '../lib/types'
 import { getCachedAudio } from '../lib/cache'
 
@@ -448,13 +448,14 @@ export function Popup() {
       <div className="controls-bar">
         <div className="chip" onClick={() => { setVoiceOpen(!voiceOpen); setStyleOpen(false) }}>
           <span className="chip-label">Voice</span>
-          <span className="chip-value">{voice.charAt(0).toUpperCase() + voice.slice(1)}</span>
+          <span className="chip-value">{voiceLabel(voice)}</span>
           <ChevronIcon />
           <div className={`chip-dropdown ${voiceOpen ? 'open' : ''}`}>
             {VOICES.map(v => (
-              <div key={v} className={`chip-option ${voice === v ? 'active' : ''}`}
+              <div key={v} className={`chip-option ${voice === v ? 'active' : ''} ${v === CREATOR_VOICE ? 'bonus' : ''}`}
                 onClick={(e) => { e.stopPropagation(); setVoice(v); setVoiceOpen(false); chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload: { defaultVoice: v } }) }}>
-                {v.charAt(0).toUpperCase() + v.slice(1)}
+                {voiceLabel(v)}
+                {v === CREATOR_VOICE && <span className="bonus-tag">Bonus</span>}
               </div>
             ))}
           </div>
