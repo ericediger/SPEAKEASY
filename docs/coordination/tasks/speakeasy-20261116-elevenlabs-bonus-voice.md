@@ -18,7 +18,7 @@ closed_reason: none
 branch: speakeasy-elevenlabs-bonus-voice
 base_branch: main
 worktree: main checkout
-latest_commit: 1dfbf4a (base)
+latest_commit: 8c7693e
 uncommitted_changes: none from this task (committed on the task branch; see Log)
 depends_on: [ElevenLabs API key with text-to-speech access to the voice]
 blocks: []
@@ -29,7 +29,7 @@ milestones:
   accepted: no
   merged: no
   deployed: no
-updated_at: 2026-11-16T15:22-05:00
+updated_at: 2026-11-16T15:31-05:00
 updated_by: Claude Code (session unknown, see owner)
 ---
 
@@ -64,7 +64,7 @@ Implemented on the task branch: the creator's voice appears as "Creator" with a 
 ## Remaining
 
 - Eric tests the bonus voice in Chrome with his ElevenLabs key.
-- Push the branch and open a PR: needs Eric's OK (public repository).
+- Merge the PR: Eric only.
 - Not done: `demo/app/` was not rebuilt, so the live demo does not show the bonus voice yet.
 
 ## Blockers
@@ -92,7 +92,8 @@ Eric loads `dist/` in Chrome, adds his ElevenLabs key in settings, and plays an 
 
 ## Evidence
 
-- Commit on branch `speakeasy-elevenlabs-bonus-voice` (see Log).
+- Commit 8c7693e on branch `speakeasy-elevenlabs-bonus-voice`, pushed.
+- PR: https://github.com/ericediger/SPEAKEASY/pull/5
 
 ## Discrepancies found on resume
 
@@ -102,3 +103,4 @@ Eric loads `dist/` in Chrome, adds his ElevenLabs key in settings, and plays an 
 
 - 2026-11-16T15:19-05:00 · Claude Code (session unknown) · created · task requested by Eric in chat; branch created from main at 1dfbf4a
 - 2026-11-16T15:22-05:00 · Claude Code (session unknown) · updated · implementation complete; type-check and build passed; committed on the task branch
+- 2026-11-16T15:31-05:00 · Claude Code (session unknown) · updated · Eric approved push and PR in chat ("Push and open PR"); branch pushed, PR 5 opened
