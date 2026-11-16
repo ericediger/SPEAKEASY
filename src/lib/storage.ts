@@ -2,6 +2,7 @@ import { UserSettings, VoiceOption, VOICES, DEFAULT_VOICE, STYLES } from './type
 
 const DEFAULT_SETTINGS: UserSettings = {
   apiKey: '',
+  elevenLabsApiKey: '',
   defaultVoice: DEFAULT_VOICE,
   defaultSpeed: 1.0,
   defaultStyle: 'Neutral',
@@ -14,9 +15,10 @@ function validVoice(voice: unknown): VoiceOption {
 
 // Get all user settings
 export async function getSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.sync.get(['apiKey', 'defaultVoice', 'defaultSpeed', 'defaultStyle'])
+  const result = await chrome.storage.sync.get(['apiKey', 'elevenLabsApiKey', 'defaultVoice', 'defaultSpeed', 'defaultStyle'])
   return {
     apiKey: result.apiKey || DEFAULT_SETTINGS.apiKey,
+    elevenLabsApiKey: result.elevenLabsApiKey || DEFAULT_SETTINGS.elevenLabsApiKey,
     defaultVoice: validVoice(result.defaultVoice),
     defaultSpeed: result.defaultSpeed || DEFAULT_SETTINGS.defaultSpeed,
     defaultStyle: STYLES.includes(result.defaultStyle) ? result.defaultStyle : DEFAULT_SETTINGS.defaultStyle,
@@ -37,6 +39,12 @@ export async function getApiKey(): Promise<string> {
 // Save API key
 export async function saveApiKey(apiKey: string): Promise<void> {
   await chrome.storage.sync.set({ apiKey })
+}
+
+// Get the ElevenLabs API key (used only by the creator's bonus voice)
+export async function getElevenLabsApiKey(): Promise<string> {
+  const { elevenLabsApiKey } = await chrome.storage.sync.get('elevenLabsApiKey')
+  return elevenLabsApiKey || ''
 }
 
 // Get default voice

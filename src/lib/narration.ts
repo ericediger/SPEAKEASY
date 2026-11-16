@@ -1,11 +1,11 @@
-import { SpeakingStyle, VoiceOption } from './types'
+import { OpenAIVoice, SpeakingStyle } from './types'
 
 const OPENAI_API_URL = 'https://api.openai.com/v1'
 const REALTIME_URL = 'wss://api.openai.com/v1/realtime'
 const NARRATION_MODEL = 'gpt-realtime-2.1-mini'
 
 // Realtime audio output is 16-bit mono PCM at 24 kHz
-const SAMPLE_RATE = 24000
+export const SAMPLE_RATE = 24000
 
 // ~1 minute of speech per request: short enough to stay faithful, long enough to sound natural
 const SEGMENT_TARGET_CHARS = 1200
@@ -50,7 +50,7 @@ export interface NarrationResult {
 export async function narrate(
   apiKey: string,
   text: string,
-  voice: VoiceOption,
+  voice: OpenAIVoice,
   style: SpeakingStyle
 ): Promise<NarrationResult> {
   const segments = splitIntoSegments(text)
@@ -76,7 +76,7 @@ export async function narrate(
 // Each secret is accepted only once, so every session (including retries) needs a new one.
 async function createClientSecret(
   apiKey: string,
-  voice: VoiceOption,
+  voice: OpenAIVoice,
   style: SpeakingStyle
 ): Promise<string> {
   const response = await fetch(`${OPENAI_API_URL}/realtime/client_secrets`, {
@@ -115,7 +115,7 @@ async function createClientSecret(
 async function narrateWithCheck(
   apiKey: string,
   text: string,
-  voice: VoiceOption,
+  voice: OpenAIVoice,
   style: SpeakingStyle
 ): Promise<{ pcm: Uint8Array<ArrayBuffer>; score: number; attempts: number }> {
   let best: { pcm: Uint8Array<ArrayBuffer>; score: number } | null = null
@@ -358,7 +358,7 @@ function concatBytes(chunks: Uint8Array<ArrayBuffer>[]): Uint8Array<ArrayBuffer>
 }
 
 // Run fn over items with at most `limit` in flight, preserving order; stops starting new work after a failure
-async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+export async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length)
   let next = 0
   let failed = false

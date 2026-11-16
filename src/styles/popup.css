@@ -291,6 +291,21 @@ body {
 .chip-option:hover { background: var(--surface-3); color: var(--text-primary); }
 .chip-option.active { color: var(--accent); background: var(--accent-muted); }
 
+/* The creator's bonus voice (ElevenLabs) sits below the OpenAI voices */
+.chip-option.bonus {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-1);
+  margin-top: 4px; position: relative;
+}
+.chip-option.bonus::before {
+  content: ''; position: absolute; top: -3px; left: 6px; right: 6px;
+  border-top: 1px solid var(--surface-3);
+}
+.bonus-tag {
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--accent); background: var(--accent-muted);
+  padding: 1px 6px; border-radius: var(--radius-full);
+}
+
 .speed-chip {
   display: flex; align-items: center;
   background: var(--surface-2); border: 1px solid var(--surface-3);

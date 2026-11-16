@@ -73,6 +73,11 @@ body {
   margin-bottom: 8px;
 }
 
+.form-group label .optional {
+  font-weight: 400;
+  color: #888;
+}
+
 .form-group input,
 .form-group select {
   width: 100%;

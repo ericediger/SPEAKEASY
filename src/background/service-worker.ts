@@ -7,10 +7,13 @@ import {
   SummarizeResponse,
   GetAudioResponse,
   UserSettings,
+  isElevenLabsVoice,
+  elevenLabsVoiceId,
 } from '../lib/types'
-import { getSettings, saveSettings, getApiKey } from '../lib/storage'
+import { getSettings, saveSettings, getApiKey, getElevenLabsApiKey } from '../lib/storage'
 import { summarize } from '../lib/openai'
-import { narrate, MIN_MATCH_SCORE } from '../lib/narration'
+import { narrate, MIN_MATCH_SCORE, NarrationResult } from '../lib/narration'
+import { narrateElevenLabs } from '../lib/elevenlabs'
 import { getCachedSummary, cacheSummary, getCachedAudio, cacheAudio, clearCache } from '../lib/cache'
 
 // Clicking the toolbar icon opens the side panel
@@ -166,14 +169,23 @@ async function handleGetAudio(payload: {
       return { success: true, cached: true }
     }
 
-    // Get API key
-    const apiKey = await getApiKey()
-    if (!apiKey) {
-      return { success: false, error: 'API key not configured. Please set it in the extension options.' }
+    // Generate audio: the creator's bonus voice uses ElevenLabs, every other voice uses OpenAI
+    let result: NarrationResult
+    if (isElevenLabsVoice(voice)) {
+      const elevenLabsKey = await getElevenLabsApiKey()
+      if (!elevenLabsKey) {
+        return { success: false, error: 'The creator\'s bonus voice needs an ElevenLabs API key. Add one in the extension options, or pick another voice.' }
+      }
+      result = await narrateElevenLabs(elevenLabsKey, text, elevenLabsVoiceId(voice), style)
+    } else {
+      const apiKey = await getApiKey()
+      if (!apiKey) {
+        return { success: false, error: 'API key not configured. Please set it in the extension options.' }
+      }
+      result = await narrate(apiKey, text, voice, style)
     }
 
-    // Generate audio
-    const { audio, segments } = await narrate(apiKey, text, voice, style)
+    const { audio, segments } = result
     const drifted = segments.filter(segment => segment.score < MIN_MATCH_SCORE)
     if (drifted.length) {
       console.warn(`${drifted.length} of ${segments.length} narration segments still differ from the text after retries`, drifted)

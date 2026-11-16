@@ -20,11 +20,35 @@ export const SUMMARY_WORDS: Record<Exclude<PlaybackMode, 'full'>, number> = {
 }
 
 // Voices available on gpt-realtime-2.1-mini
-export type VoiceOption = 'alloy' | 'ash' | 'ballad' | 'coral' | 'echo' | 'sage' | 'shimmer' | 'verse' | 'marin' | 'cedar'
+export type OpenAIVoice = 'alloy' | 'ash' | 'ballad' | 'coral' | 'echo' | 'sage' | 'shimmer' | 'verse' | 'marin' | 'cedar'
 
-export const VOICES: VoiceOption[] = ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse']
+export const OPENAI_VOICES: OpenAIVoice[] = ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse']
+
+// Bonus voice from SpeakEasy's creator, narrated by ElevenLabs with the user's own ElevenLabs API key.
+// The value carries the ElevenLabs voice ID, so cached audio follows the voice if it ever changes.
+export const CREATOR_VOICE_ID = 'G3qIj1Lb0GkRqMWsPD2C'
+export const CREATOR_VOICE = `elevenlabs:${CREATOR_VOICE_ID}` as const
+export type ElevenLabsVoice = typeof CREATOR_VOICE
+
+export type VoiceOption = OpenAIVoice | ElevenLabsVoice
+
+export const VOICES: VoiceOption[] = [...OPENAI_VOICES, CREATOR_VOICE]
 
 export const DEFAULT_VOICE: VoiceOption = 'marin'
+
+export function isElevenLabsVoice(voice: VoiceOption): voice is ElevenLabsVoice {
+  return voice.startsWith('elevenlabs:')
+}
+
+export function elevenLabsVoiceId(voice: ElevenLabsVoice): string {
+  return voice.slice('elevenlabs:'.length)
+}
+
+// Name shown on the voice chip and in settings
+export function voiceLabel(voice: VoiceOption): string {
+  if (voice === CREATOR_VOICE) return 'Creator'
+  return voice.charAt(0).toUpperCase() + voice.slice(1)
+}
 
 // Speaking styles, applied to the narrator's delivery
 export type SpeakingStyle = 'Neutral' | 'Energetic' | 'Calm' | 'Professional' | 'Conversational' | 'Storytelling'
@@ -34,6 +58,7 @@ export const STYLES: SpeakingStyle[] = ['Neutral', 'Energetic', 'Calm', 'Profess
 // User settings stored in chrome.storage.sync
 export interface UserSettings {
   apiKey: string
+  elevenLabsApiKey: string // only needed for the creator's bonus voice
   defaultVoice: VoiceOption
   defaultSpeed: number
   defaultStyle: SpeakingStyle
